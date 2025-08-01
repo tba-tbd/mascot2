@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image Preference Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to bottom, #FFF7ED, #FFFBEB);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #main-card {
+      background: white;
+      border-radius: 2rem;
+      box-shadow: 0 8px 24px rgba(255, 183, 77, 0.08);
+      max-width: 380px;
+      width: 100%;
+      padding: 2rem 1.5rem 1.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 1rem;
+    }
+    h1, h2 {
+      margin-bottom: 1.5rem;
+      margin-top: 0;
+      text-align: center;
+    }
+    .image-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border-radius: 1.5rem;
+      background: #f5f5f4;
+      border: 1px solid #ffe0b2;
+      margin-bottom: 1.5rem;
+      box-sizing: border-box;
+      max-width: 95vw;
+      max-height: 350px;
+      overflow: hidden;
+    }
+    .image-box img {
+      display: block;
+      border-radius: 1.2rem;
+      max-width: 95vw;
+      max-height: 350px;
+      height: auto;
+      width: auto;
+      box-shadow: none;
+    }
+    .button-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+      width: 100%;
+      justify-content: center;
+    }
+    button {
+      font-size: 1.1rem;
+      padding: 0.7rem 1.6rem;
+      border-radius: 0.8rem;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px #ffecb340;
+      transition: background 0.15s;
+    }
+    .no    { background: #eeeeee; color: #888;}
+    .no:hover    { background: #e0e0e0; }
+    .yes   { background: #e0f2f1; color: #17605e;}
+    .yes:hover   { background: #b2dfdb; }
+    .fire  { background: #ffecb3; color: #ff6f00;}
+    .fire:hover  { background: #ffd54f; }
+    .small {
+      font-size: 0.97rem;
+      color: #aaa;
+      margin-top: 0.6rem;
+      text-align: center;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div id="main-card">
+    <!-- Content inserted by JS -->
+  </div>
+
+  <script>
+    // === Configuration: Images in img/ folder, named 1.png ... 9.png ===
+    const images = Array.from({length: 9}, (_, i) => `img/${i + 1}.png`);
+
+    // === Shuffle helper ===
+    function shuffle(arr) {
+      return arr.map(a => [Math.random(), a])
+                .sort((a, b) => a[0] - b[0])
+                .map(a => a[1]);
+    }
+
+    // === State ===
+    let order = [];
+    let index = 0;
+    let results = [];
+
+    // === DOM elements ===
+    const main = document.getElementById('main-card');
+
+    function showCover() {
+      main.innerHTML = `
+        <h1>Image Test</h1>
+        <button class="yes" id="start-btn">Start Session</button>
+      `;
+      document.getElementById('start-btn').onclick = startSession;
+    }
+
+    function startSession() {
+      order = shuffle(images);
+      index = 0;
+      results = [];
+      showImage();
+    }
+
+    function showImage() {
+      if (index >= order.length) return showThankYou();
+
+      main.innerHTML = `
+        <h2>Do you like this image?</h2>
+        <div class="image-box">
+          <img src="${order[index]}" alt="Test image" onload="this.parentNode.style.width=this.naturalWidth+'px';this.parentNode.style.height=this.naturalHeight+'px'; if(this.naturalWidth>350){this.style.maxWidth='350px';this.parentNode.style.width='350px'} if(this.naturalHeight>350){this.style.maxHeight='350px';this.parentNode.style.height='350px'}">
+        </div>
+        <div class="button-row">
+          <button class="no" onclick="window.handleResponse('no')">No</button>
+          <button class="yes" onclick="window.handleResponse('yes')">Yes</button>
+          <button class="fire" onclick="window.handleResponse('fire')">It's 🔥</button>
+        </div>
+        <div class="small">${index+1} / ${order.length}</div>
+      `;
+    }
+
+    function showThankYou() {
+      main.innerHTML = `
+        <h2>Thank you!</h2>
+        <div class="small">Your answers have been saved.<br>Check your downloads.<br><br>
+        <button class="yes" id="again-btn">Start Again</button>
+      `;
+      document.getElementById('again-btn').onclick = startSession;
+      downloadResults();
+    }
+
+    window.handleResponse = function(resp) {
+      results.push({
+        image: order[index],
+        response: resp,
+        timestamp: new Date().toISOString()
+      });
+      index++;
+      showImage();
+    };
+
+    function downloadResults() {
+      const data = JSON.stringify(results, null, 2);
+      const blob = new Blob([data], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'image-test-results.json';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+
+    // === Start ===
+    showCover();
+  </script>
+</body>
+</html>
