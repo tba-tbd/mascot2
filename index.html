@@ -82,13 +82,19 @@
       margin-top: 0.6rem;
       text-align: center;
     }
-    .hidden { display: none; }
+    input {
+      padding: 0.6rem;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+      margin-bottom: 1.5rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
-  <div id="main-card">
-    <!-- Content inserted by JS -->
-  </div>
+  <div id="main-card"></div>
 
   <script>
     // === Configuration: Images in img/ folder, named 1.png ... 9.png ===
@@ -105,16 +111,25 @@
     let order = [];
     let index = 0;
     let results = [];
+    let userName = "";
 
-    // === DOM elements ===
     const main = document.getElementById('main-card');
 
     function showCover() {
       main.innerHTML = `
         <h1>Image Test</h1>
+        <input type="text" id="name-input" placeholder="Enter your name">
         <button class="yes" id="start-btn">Start Session</button>
       `;
-      document.getElementById('start-btn').onclick = startSession;
+      document.getElementById('start-btn').onclick = () => {
+        const nameInput = document.getElementById('name-input').value.trim();
+        if (!nameInput) {
+          alert("Please enter your name to start.");
+          return;
+        }
+        userName = nameInput;
+        startSession();
+      };
     }
 
     function startSession() {
@@ -130,7 +145,8 @@
       main.innerHTML = `
         <h2>Do you like this image?</h2>
         <div class="image-box">
-          <img src="${order[index]}" alt="Test image" onload="this.parentNode.style.width=this.naturalWidth+'px';this.parentNode.style.height=this.naturalHeight+'px'; if(this.naturalWidth>350){this.style.maxWidth='350px';this.parentNode.style.width='350px'} if(this.naturalHeight>350){this.style.maxHeight='350px';this.parentNode.style.height='350px'}">
+          <img src="${order[index]}" alt="Test image"
+            onload="resizeImageBox(this)">
         </div>
         <div class="button-row">
           <button class="no" onclick="window.handleResponse('no')">No</button>
@@ -141,18 +157,32 @@
       `;
     }
 
+    function resizeImageBox(img) {
+      const box = img.parentNode;
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+      const maxW = 350, maxH = 350;
+      if (w > maxW) { h *= maxW / w; w = maxW; }
+      if (h > maxH) { w *= maxH / h; h = maxH; }
+      img.style.width = w + "px";
+      img.style.height = h + "px";
+      box.style.width = w + "px";
+      box.style.height = h + "px";
+    }
+
     function showThankYou() {
       main.innerHTML = `
         <h2>Thank you!</h2>
         <div class="small">Your answers have been saved.<br>Check your downloads.<br><br>
         <button class="yes" id="again-btn">Start Again</button>
       `;
-      document.getElementById('again-btn').onclick = startSession;
+      document.getElementById('again-btn').onclick = showCover;
       downloadResults();
     }
 
     window.handleResponse = function(resp) {
       results.push({
+        name: userName,
         image: order[index],
         response: resp,
         timestamp: new Date().toISOString()
@@ -162,12 +192,14 @@
     };
 
     function downloadResults() {
+      const safeName = userName.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+      const fileName = `image-test-results-${safeName}.json`;
       const data = JSON.stringify(results, null, 2);
       const blob = new Blob([data], {type: 'application/json'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'image-test-results.json';
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
@@ -176,7 +208,7 @@
       }, 100);
     }
 
-    // ===  Start  ===
+    // Start
     showCover();
   </script>
 </body>
